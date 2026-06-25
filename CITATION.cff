@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "aos-ga"
+abstract: >-
+  A problem-agnostic framework for studying adaptive operator selection (AOS)
+  strategies in genetic algorithms under tight evaluation budgets, with
+  reproducible experiments, metrics, statistical analysis and visualization.
+type: software
+authors:
+  - family-names: "Wiśniewski"
+    given-names: "Damian"
+    email: "dev@thehardway.pl"
+version: "0.1.0"
+date-released: "2026-06-25"
+license: MIT
+keywords:
+  - genetic-algorithm
+  - adaptive-operator-selection
+  - evolutionary-computation
+  - multi-armed-bandit
+  - reproducibility

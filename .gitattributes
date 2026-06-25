@@ -1,0 +1,7 @@
+# Normalize line endings to LF in the repository and on checkout, on every
+# platform, so that source and configuration files are byte-stable.
+* text=auto eol=lf
+
+# Byte-exact data artifacts: never apply any end-of-line conversion, so that
+# instance and manifest checksums are identical across operating systems.
+data/** -text
