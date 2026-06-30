@@ -1,0 +1,104 @@
+{
+    "instances": [
+        {
+            "R": 1000,
+            "capacity": 4266,
+            "checksum": "sha256:a8f11cd7e1847682dda310304edaac9515b1dfe4249718367e784711163e53c6",
+            "correlation_type": "strongly",
+            "instance_id": "n20_strongly",
+            "metadata": {
+                "seed": 2577246761
+            },
+            "n": 20
+        },
+        {
+            "R": 1000,
+            "capacity": 5134,
+            "checksum": "sha256:3c8eab01473c317ca73ae2dfa7df751c416c21f197ad033cbbaaca4e926b4949",
+            "correlation_type": "uncorrelated",
+            "instance_id": "n20_uncorrelated",
+            "metadata": {
+                "seed": 697299274
+            },
+            "n": 20
+        },
+        {
+            "R": 1000,
+            "capacity": 5157,
+            "checksum": "sha256:029024d909467892920780f7041ea6690cabb403ad64c67922d9b4e14c99364b",
+            "correlation_type": "weakly",
+            "instance_id": "n20_weakly",
+            "metadata": {
+                "seed": 1606843269
+            },
+            "n": 20
+        },
+        {
+            "R": 1000,
+            "capacity": 7059,
+            "checksum": "sha256:84a8fa81db9dfb5e58a582a229a9dd702b1621f3ec26dc818871ba94ef31ebe0",
+            "correlation_type": "strongly",
+            "instance_id": "n30_strongly",
+            "metadata": {
+                "seed": 972143592
+            },
+            "n": 30
+        },
+        {
+            "R": 1000,
+            "capacity": 8072,
+            "checksum": "sha256:b7a77c835f0b968019b6e13faa4ae782550d04e5fdd6b2f4e1d518e81ccc7c5b",
+            "correlation_type": "uncorrelated",
+            "instance_id": "n30_uncorrelated",
+            "metadata": {
+                "seed": 3064857378
+            },
+            "n": 30
+        },
+        {
+            "R": 1000,
+            "capacity": 7242,
+            "checksum": "sha256:5a0b31ab610bf00fd200f0f8b8721651b01fafe97d887a53ac70a9f7ba596520",
+            "correlation_type": "weakly",
+            "instance_id": "n30_weakly",
+            "metadata": {
+                "seed": 1553210182
+            },
+            "n": 30
+        },
+        {
+            "R": 1000,
+            "capacity": 13140,
+            "checksum": "sha256:90cc621f878f80ca5893848f1bbc001eb83298dd4c138ae3d7c3411e87048077",
+            "correlation_type": "strongly",
+            "instance_id": "n50_strongly",
+            "metadata": {
+                "seed": 68504625
+            },
+            "n": 50
+        },
+        {
+            "R": 1000,
+            "capacity": 10279,
+            "checksum": "sha256:145cf0aaf7d78e3b6980db13bd3e9d6327ecd34d27f3fd4c8a564ea32b3bf00d",
+            "correlation_type": "uncorrelated",
+            "instance_id": "n50_uncorrelated",
+            "metadata": {
+                "seed": 3207017045
+            },
+            "n": 50
+        },
+        {
+            "R": 1000,
+            "capacity": 10818,
+            "checksum": "sha256:22b408958b5103000a356d8f1a3aa3a75498ae283f94fe0cc9cd993d8452e5a7",
+            "correlation_type": "weakly",
+            "instance_id": "n50_weakly",
+            "metadata": {
+                "seed": 502192065
+            },
+            "n": 50
+        }
+    ],
+    "schema_version": 1
+}
