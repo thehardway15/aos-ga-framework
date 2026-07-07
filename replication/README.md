@@ -83,6 +83,25 @@ experiments/tests`).
 `--R 1000` reproduce the instances byte-for-byte, and therefore the same
 checksums. This is verified manually, not automated inside this repository.
 
+## Determinism and randomness
+
+Every run is fully determined by its seed. Framework code draws only from a
+single injected `numpy.random.Generator`, created per run from one of the
+repetition seeds; NumPy's global random state is never seeded or used.
+
+DEAP's built-in operators are the one exception: they draw from Python's global
+`random` module and offer no way to inject a generator. Each run therefore seeds
+that module once, from a substream that is disjoint from the run's `Generator`,
+so the operators are reproducible without contaminating framework randomness.
+Because the `random` module is process-global, independent runs are isolated per
+process (not per thread), which the runner relies on when parallelizing.
+
+Seeds are spawned from the master seed on `numpy.random.SeedSequence` branches:
+one branch feeds the knapsack instance seeds, a disjoint branch feeds the 30
+repetition seeds in `data/seeds/seeds.json`. Each run then splits its repetition
+seed into the two substreams above. The repetition seeds are shared by every
+configuration so the Friedman blocks are paired across configurations.
+
 ## Running the experiments
 
 _To be completed: configurations, runner invocation, per-phase Git tags._
