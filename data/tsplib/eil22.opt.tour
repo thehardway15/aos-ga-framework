@@ -1,0 +1,29 @@
+NAME : eil22.opt.tour
+COMMENT : Optimal tour (278)
+TYPE : TOUR
+DIMENSION : 22
+TOUR_SECTION
+1
+15
+17
+20
+22
+18
+21
+19
+16
+13
+11
+9
+7
+10
+8
+6
+3
+2
+4
+5
+12
+14
+-1
+EOF

@@ -1,0 +1,32 @@
+{
+    "instances": [
+        {
+            "checksum": "sha256:0858c4626bf242b53d1d75d35d6c56f4938334d184f653fdce640da2d5161bf9",
+            "dimension": 22,
+            "edge_weight_type": "EUC_2D",
+            "instance_id": "eil22",
+            "opt_tour_checksum": "sha256:8165d666dbaf5f5f08c6390da1409a4c281e8d870914c0eae67125846b9e2c52",
+            "optimal_length": 278,
+            "source": "TSPLIB VRP set (Eilon et al.); TSP optimum computed via Held-Karp"
+        },
+        {
+            "checksum": "sha256:66c05ad077ffd64d5778e358bbd16be049f8c8ae880cbd24f034487331d1ccce",
+            "dimension": 51,
+            "edge_weight_type": "EUC_2D",
+            "instance_id": "eil51",
+            "opt_tour_checksum": "sha256:fb84e8aba84b163b782d60bc5a6d3d402bccf5d5d77355d03b4713044617c8fc",
+            "optimal_length": 426,
+            "source": "TSPLIB (Reinelt 1991)"
+        },
+        {
+            "checksum": "sha256:8496a5838133e3c3eb25a9fa8893b1ac302593fc8dc325350643a0cabd8abadc",
+            "dimension": 52,
+            "edge_weight_type": "EUC_2D",
+            "instance_id": "berlin52",
+            "opt_tour_checksum": "sha256:8f3915f397dcdbf9f07bd570fc41faa7e9b3d27391537f048164b2f937d1ccc9",
+            "optimal_length": 7542,
+            "source": "TSPLIB (Reinelt 1991)"
+        }
+    ],
+    "schema_version": 1
+}
