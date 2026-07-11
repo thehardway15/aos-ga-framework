@@ -23,7 +23,8 @@ import pickle
 import numpy as np
 import pytest
 
-from aos_ga.core.problem import Direction, Problem, Representation, quality
+from aos_ga.core.problem import Direction, Problem, quality
+from aos_ga.core.representation import Representation
 
 
 class _MaxProblem(Problem[list[int]]):

@@ -19,7 +19,8 @@ from collections.abc import Sequence
 
 import numpy as np
 
-from aos_ga.core.problem import Direction, Problem, Representation
+from aos_ga.core.problem import Direction, Problem
+from aos_ga.core.representation import Representation
 from experiments.datasets.tsplib import TSPInstance
 from experiments.problems.tsp import TSPProblem
 

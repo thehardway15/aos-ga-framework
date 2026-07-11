@@ -9,11 +9,11 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Generic, TypeVar
+from typing import Generic
 
 from numpy.random import Generator
 
-Genome = TypeVar("Genome")
+from .representation import Genome, Representation
 
 
 class Direction(Enum):
@@ -26,14 +26,6 @@ class Direction(Enum):
     def sign(self) -> int:
         """+1 for maximization, -1 for minimization: the f -> g sign."""
         return 1 if self is Direction.MAXIMIZE else -1
-
-
-class Representation(Enum):
-    """Genome family a problem operates on (selects the operator pool)."""
-
-    PERMUTATION = "permutation"
-    BINARY = "binary"
-    REAL = "real"
 
 
 def quality(objective: float, direction: Direction) -> float:

@@ -8,7 +8,8 @@ a minimization objective. Genomes are city permutations (``list[int]``).
 import numpy as np
 from numpy.random import Generator
 
-from aos_ga.core.problem import Direction, Problem, Representation
+from aos_ga.core.problem import Direction, Problem
+from aos_ga.core.representation import Representation
 
 from ..datasets.tsplib import TSPInstance
 
