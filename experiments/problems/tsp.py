@@ -43,5 +43,4 @@ class TSPProblem(Problem[list[int]]):
 
     def initialize(self, rng: Generator) -> list[int]:
         """Sample a uniformly random tour using only ``rng`` (no global state)."""
-        perm: list[int] = rng.permutation(self.dimension).tolist()
-        return perm
+        return [int(city) for city in rng.permutation(self.dimension)]

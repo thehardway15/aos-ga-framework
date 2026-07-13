@@ -1,4 +1,4 @@
-"""Contract tests for the framework's variation-operator interface (T8).
+"""Contract tests for the framework's variation-operator interface.
 
 These pin the public API of :mod:`aos_ga.core.operator`: the ``OperatorKind`` of
 a variation operator (recombinative vs perturbative) and the abstract
@@ -13,7 +13,7 @@ executable specification of the contract. Expected public names: ``Operator``,
 ``aos_ga.core.representation``. ``Operator`` is generic over the genome type, like
 ``Problem``.
 
-Frozen contract (T8):
+Frozen contract:
 - ``apply(parents, rng) -> child`` returns exactly ONE child genome, drawing
   randomness only from the injected ``rng`` (no global state) and being
   deterministic for a fixed rng seed.
