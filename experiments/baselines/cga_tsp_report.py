@@ -1,0 +1,261 @@
+import argparse
+import csv
+import itertools
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+
+import numpy as np
+
+from aos_ga.core.engine import RunResult, run
+from aos_ga.core.problem import Problem
+from aos_ga.operators.permutation import OrderCrossover, SegmentInversion
+from aos_ga.rng import run_generator
+from aos_ga.variation.canonical import CanonicalPipeline
+
+from ..datasets.seeds import load_repetition_seeds
+from ..datasets.tsplib import load_instance, load_manifest
+from ..problems.tsp import TSPProblem
+
+_CSV_COLUMNS = [
+    "instance_id",
+    "population_size",
+    "generations",
+    "seed",
+    "best_objective",
+    "optimum",
+    "gap",
+]
+
+_AGG_CSV_COLUMNS = [
+    "instance_id",
+    "population_size",
+    "generations",
+    "n_seeds",
+    "mean_gap",
+    "std_gap",
+    "median_gap",
+    "min_gap",
+    "max_gap",
+]
+
+INSTANCES = ("eil22", "eil51", "berlin52")
+POPULATION_SIZES = (20, 50)
+GENERATION_BUDGETS = (20, 30, 50)
+
+
+@dataclass(frozen=True)
+class RunRecord:
+    instance_id: str
+    population_size: int
+    generations: int
+    seed: int
+    best_objective: float
+    optimum: int
+    gap: float
+
+
+@dataclass(frozen=True)
+class CellResult:
+    instance_id: str
+    population_size: int
+    generations: int
+    records: tuple[RunRecord, ...]
+
+    @property
+    def gaps(self) -> tuple[float, ...]:
+        return tuple(record.gap for record in self.records)
+
+    @property
+    def mean(self) -> float:
+        return float(np.mean(self.gaps)) if self.gaps else 0.0
+
+    @property
+    def std(self) -> float:
+        if not self.gaps:
+            return 0.0
+        if len(self.gaps) < 2:
+            return 0.0
+        return float(np.std(self.gaps, ddof=1))
+
+    @property
+    def median(self) -> float:
+        return float(np.median(self.gaps)) if self.gaps else 0.0
+
+    @property
+    def minimum(self) -> float:
+        return min(self.gaps) if self.gaps else 0.0
+
+    @property
+    def maximum(self) -> float:
+        return max(self.gaps) if self.gaps else 0.0
+
+
+def gap_to_optimum(best_objective: float, optimum: int) -> float:
+    if optimum == 0:
+        raise ValueError("Optimum cannot be zero when computing gap.")
+    return (best_objective - optimum) / optimum
+
+
+def format_table(cells: list[CellResult]) -> str:
+    """Format a table of cells for display."""
+    header = (
+        "Instance | Population | Generations | Mean Gap | Std Dev | Median Gap | Min Gap | Max Gap"
+    )
+    lines = [header]
+    for cell in cells:
+        line = (
+            f"{cell.instance_id} | {cell.population_size} | {cell.generations} | {cell.mean:.4f} | "
+            f"{cell.std:.4f} | {cell.median:.4f} | {cell.minimum:.4f} | {cell.maximum:.4f}"
+        )
+        lines.append(line)
+    return "\n".join(lines)
+
+
+def write_csv(path: Path, cells: list[RunRecord]) -> None:
+    """Write a CSV file with the raw per-run records."""
+
+    with path.open("w", newline="") as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=_CSV_COLUMNS)
+        writer.writeheader()
+        for record in cells:
+            writer.writerow(
+                {
+                    "instance_id": record.instance_id,
+                    "population_size": record.population_size,
+                    "generations": record.generations,
+                    "seed": record.seed,
+                    "best_objective": record.best_objective,
+                    "optimum": record.optimum,
+                    "gap": record.gap,
+                }
+            )
+
+
+def write_aggregated_csv(path: Path, cells: list[CellResult]) -> None:
+    """Write a CSV file with one aggregated row per cell (for plots and thesis tables)."""
+
+    with path.open("w", newline="") as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=_AGG_CSV_COLUMNS)
+        writer.writeheader()
+        for cell in cells:
+            writer.writerow(
+                {
+                    "instance_id": cell.instance_id,
+                    "population_size": cell.population_size,
+                    "generations": cell.generations,
+                    "n_seeds": len(cell.records),
+                    "mean_gap": cell.mean,
+                    "std_gap": cell.std,
+                    "median_gap": cell.median,
+                    "min_gap": cell.minimum,
+                    "max_gap": cell.maximum,
+                }
+            )
+
+
+def run_cga(
+    problem: Problem[list[int]], seed: int, *, population_size: int, generations: int
+) -> RunResult[list[int]]:
+    pipeline = CanonicalPipeline(OrderCrossover(), 0.9, SegmentInversion(), 0.1)
+
+    return run(
+        problem,
+        pipeline,
+        run_generator(seed),
+        population_size=population_size,
+        generations=generations,
+    )
+
+
+def evaluate_cell(
+    instance_id: str, *, population_size: int, generations: int, seeds: list[int]
+) -> CellResult:
+    problem = TSPProblem(load_instance(instance_id))
+    optimum = next(e for e in load_manifest() if e.instance_id == instance_id).optimal_length
+
+    records: list[RunRecord] = []
+    for seed in seeds:
+        result = run_cga(problem, seed, population_size=population_size, generations=generations)
+        best_objective = result.best_objective
+        gap = gap_to_optimum(best_objective, optimum)
+        record = RunRecord(
+            instance_id=instance_id,
+            population_size=population_size,
+            generations=generations,
+            seed=seed,
+            best_objective=best_objective,
+            optimum=optimum,
+            gap=gap,
+        )
+        records.append(record)
+
+    return CellResult(
+        instance_id=instance_id,
+        population_size=population_size,
+        generations=generations,
+        records=tuple(records),
+    )
+
+
+def evaluate_sweep(seeds: list[int]) -> list[CellResult]:
+    cells = []
+    for instance_id, population_size, generations in itertools.product(
+        INSTANCES, POPULATION_SIZES, GENERATION_BUDGETS
+    ):
+        cell = evaluate_cell(
+            instance_id,
+            population_size=population_size,
+            generations=generations,
+            seeds=seeds,
+        )
+        print(
+            f"Evaluated cell: {instance_id}, pop={population_size}, "
+            f"gen={generations}, mean gap={cell.mean:.4f}",
+            file=sys.stderr,
+        )
+        cells.append(cell)
+    return cells
+
+
+def main() -> None:
+    argument_parser = argparse.ArgumentParser(
+        description="Run CGA on TSP instances and report results."
+    )
+    argument_parser.add_argument(
+        "--seeds",
+        type=int,
+        default=None,
+        required=False,
+        help="List of random seeds for reproducibility.",
+    )
+    argument_parser.add_argument(
+        "--csv",
+        type=str,
+        default=None,
+        required=False,
+        help="Path to output CSV file for raw run records.",
+    )
+    argument_parser.add_argument(
+        "--agg-csv",
+        type=str,
+        default=None,
+        required=False,
+        help="Path to output CSV file for aggregated per-cell statistics.",
+    )
+
+    args = argument_parser.parse_args()
+    seeds = load_repetition_seeds()
+    if args.seeds is not None:
+        seeds = seeds[: args.seeds]
+
+    cells = evaluate_sweep(seeds)
+    print(format_table(cells))
+    if args.csv:
+        write_csv(Path(args.csv), [record for cell in cells for record in cell.records])
+    if args.agg_csv:
+        write_aggregated_csv(Path(args.agg_csv), cells)
+
+
+if __name__ == "__main__":
+    main()
