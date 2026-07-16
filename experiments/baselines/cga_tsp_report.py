@@ -227,7 +227,7 @@ def main() -> None:
         type=int,
         default=None,
         required=False,
-        help="List of random seeds for reproducibility.",
+        help="Number of random seeds for reproducibility.",
     )
     argument_parser.add_argument(
         "--csv",
