@@ -20,6 +20,20 @@ class UnknownInstanceError(KeyError):
     pass
 
 
+class OptimaError(Exception):
+    pass
+
+
+@dataclass(frozen=True)
+class OptimumEntry:
+    """One ``optima.json`` record: an instance's exact optimum, selection and file checksum."""
+
+    instance_id: str
+    optimum: int
+    instance_checksum: str
+    selection: tuple[int, ...]
+
+
 @dataclass(frozen=True)
 class KnapsackInstance:
     instance_id: str
@@ -56,6 +70,29 @@ def _validate_checksum(instance_data: bytes, expected_checksum: str) -> None:
             f"Checksum mismatch for instance. "
             f"Expected {expected_checksum}, got {instance_checksum}."
         )
+
+
+def load_optima(data_dir: Path = KNAPSACK_DIR) -> list[OptimumEntry]:
+    """Read ``optima.json`` and return one :class:`OptimumEntry` per instance.
+
+    Validates the schema version and structure, raising :class:`OptimaError` on an
+    unsupported version or a missing ``optima`` key.
+    """
+    with open(data_dir / "optima.json", encoding="utf-8") as f:
+        payload = json.load(f)
+    if payload.get("schema_version") != 1:
+        raise OptimaError(f"Unsupported optima schema version: {payload.get('schema_version')}")
+    if "optima" not in payload:
+        raise OptimaError("Optima file is missing 'optima' key.")
+    return [
+        OptimumEntry(
+            instance_id=e["instance_id"],
+            optimum=e["optimum"],
+            instance_checksum=e["instance_checksum"],
+            selection=tuple(e["selection"]),
+        )
+        for e in payload["optima"]
+    ]
 
 
 def load_instance(
