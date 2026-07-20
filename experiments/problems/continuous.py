@@ -103,7 +103,7 @@ class ContinuousProblem(Problem[list[float]]):
         coordinate out of the domain, and clipping to the nearest bound keeps every
         solution feasible without the operators knowing the bounds.
         """
-        return [float(x) for x in np.clip(solution, self.lower, self.upper).tolist()]
+        return [float(x) for x in np.clip(solution, self.lower, self.upper)]
 
     def evaluate(self, x: list[float]) -> float:
         """Raw function value ``f(x)``, the minimization objective; never raises."""

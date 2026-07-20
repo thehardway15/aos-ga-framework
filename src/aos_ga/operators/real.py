@@ -59,7 +59,7 @@ class SBX(Operator[list[float]]):
             raise ValueError(f"Expected {self.arity} parents, got {len(parents)}")
 
         d = len(parents[0])
-        u = rng.random(size=d).tolist()
+        u = rng.random(size=d)
 
         beta = [self._spread(u_i) for u_i in u]
         c1 = [
