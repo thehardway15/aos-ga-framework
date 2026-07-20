@@ -13,6 +13,8 @@ from aos_ga.operators.permutation import OrderCrossover, SegmentInversion
 from aos_ga.rng import run_generator
 from aos_ga.variation.canonical import CanonicalPipeline
 
+from ..configs import GENERATION_BUDGETS as GENERATION_BUDGETS
+from ..configs import POPULATION_SIZES as POPULATION_SIZES
 from ..datasets.seeds import load_repetition_seeds
 from ..datasets.tsplib import load_instance, load_manifest
 from ..problems.tsp import TSPProblem
@@ -40,8 +42,6 @@ _AGG_CSV_COLUMNS = [
 ]
 
 INSTANCES = ("eil22", "eil51", "berlin52")
-POPULATION_SIZES = (20, 50)
-GENERATION_BUDGETS = (20, 30, 50)
 
 
 @dataclass(frozen=True)
