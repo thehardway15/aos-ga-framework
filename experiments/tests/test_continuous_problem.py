@@ -6,8 +6,8 @@ optimum coordinate, and the :class:`ContinuousProblem` that wraps one function a
 fixed dimension. Fitness is the raw function value (a minimization objective), the
 seeded ``initialize`` samples uniformly over the domain, and -- unlike the TSP and
 knapsack problems, whose ``repair`` is the inherited identity -- ``repair`` here
-box-clips every coordinate back into ``[lower, upper]`` (methodology, sec. 3, the
-per-coordinate clipping rule). Every asserted number is hand-computable: integer
+box-clips every coordinate back into ``[lower, upper]`` (the per-coordinate clipping
+rule). Every asserted number is hand-computable: integer
 vectors make the transcendental terms collapse (``cos(2*pi*k) == 1``), and the three
 functions are pinned against an independent reference formula on sampled points.
 
@@ -50,7 +50,7 @@ def _problem(function: BenchmarkFunction, dimension: int) -> ContinuousProblem:
     return ContinuousProblem(function, dimension)
 
 
-# Independent reference implementations of the three formulas (methodology, sec. 3),
+# Independent reference implementations of the three formulas,
 # used to pin evaluate against transcription errors on sampled points.
 
 
