@@ -20,7 +20,6 @@ from pathlib import Path
 import numpy as np
 
 from aos_ga.core.engine import RunResult, run
-from aos_ga.core.problem import Problem
 from aos_ga.operators.real import SBX, PolynomialMutation
 from aos_ga.rng import run_generator
 from aos_ga.variation.canonical import CanonicalPipeline
@@ -193,10 +192,15 @@ def write_csv(path: Path, records: list[RunRecord]) -> None:
 
 
 def run_cga(
-    problem: Problem[list[float]], seed: int, *, population_size: int, generations: int
+    problem: ContinuousProblem, seed: int, *, population_size: int, generations: int
 ) -> RunResult[list[float]]:
-    """One CGA run on ``problem`` from ``seed``: SBX ``p_c=0.9`` then polynomial ``p_m=1.0``."""
-    pipeline = CanonicalPipeline(SBX(), 0.9, PolynomialMutation(), 1.0)
+    """One CGA run on ``problem`` from ``seed``: SBX ``p_c=0.9`` then polynomial ``p_m=1.0``.
+
+    The polynomial step scales with the box width ``span = upper - lower`` of ``problem``.
+    """
+    pipeline = CanonicalPipeline(
+        SBX(), 0.9, PolynomialMutation(span=problem.upper - problem.lower), 1.0
+    )
 
     return run(
         problem,

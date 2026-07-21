@@ -57,16 +57,19 @@ _GENERATIONS = 50
 _SMOKE_SEED_COUNT = 3
 
 
-def _pipeline() -> CanonicalPipeline[list[float]]:
-    """Build the CGA-on-continuous variation step: SBX ``p_c=0.9`` then polynomial ``p_m=1.0``."""
-    return CanonicalPipeline(SBX(), 0.9, PolynomialMutation(), 1.0)
+def _pipeline(span: float) -> CanonicalPipeline[list[float]]:
+    """Build the CGA-on-continuous variation step: SBX ``p_c=0.9`` then polynomial ``p_m=1.0``.
+
+    The polynomial step scales with the box width ``span = upper - lower`` of the problem.
+    """
+    return CanonicalPipeline(SBX(), 0.9, PolynomialMutation(span=span), 1.0)
 
 
 def _run(problem: ContinuousProblem, seed: int) -> RunResult[list[float]]:
     """One reproducible CGA run on ``problem`` from ``seed`` (fresh generator, engine defaults)."""
     return run(
         problem,
-        _pipeline(),
+        _pipeline(problem.upper - problem.lower),
         run_generator(seed),
         population_size=_POPULATION_SIZE,
         generations=_GENERATIONS,
