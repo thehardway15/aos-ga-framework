@@ -21,7 +21,6 @@ import argparse
 import csv
 import itertools
 import sys
-from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -37,22 +36,11 @@ from aos_ga.variation.single_operator import SingleOperatorStep
 
 from ..configs import GENERATION_BUDGETS as GENERATION_BUDGETS
 from ..configs import POPULATION_SIZES as POPULATION_SIZES
+from ..configs.families import FAMILIES as FAMILIES
+from ..configs.families import FamilyDescriptor as FamilyDescriptor
 from ..configs.pools import PoolVariant, build_pool, pool_ids
-from ..datasets.knapsack import load_instance as load_knapsack_instance
 from ..datasets.seeds import load_repetition_seeds
-from ..datasets.tsplib import load_instance as load_tsp_instance
-from ..problems.continuous import (
-    RASTRIGIN,
-    ROSENBROCK,
-    SPHERE,
-    BenchmarkFunction,
-    ContinuousProblem,
-)
-from ..problems.knapsack import KnapsackProblem
-from ..problems.tsp import TSPProblem
 from .fbo_oracle import OperatorOracle, derive_oracle
-
-ContinuousSpec = tuple[BenchmarkFunction, int]
 
 
 @dataclass(frozen=True)
@@ -135,74 +123,6 @@ class OracleRow:
     generations: int
     pool_variant: PoolVariant
     oracle: OperatorOracle
-
-
-@dataclass(frozen=True)
-class FamilyDescriptor:
-    """One problem family: its instances and how to build each problem and its pool bounds.
-
-    ``specs`` are opaque per-family instance handles (an id string, or a
-    ``(function, dimension)`` pair); ``build_problem`` turns one into a problem and
-    ``pool_bounds`` gives the real-valued pool's domain bounds (``None`` for the discrete
-    families). The handle type is erased to ``Any`` here so the three families share one
-    tuple; each builder below keeps its own precise type.
-    """
-
-    problem: str
-    representation: Representation
-    specs: tuple[Any, ...]
-    build_problem: Callable[[Any], Problem[Any]]
-    pool_bounds: Callable[[Any], tuple[float, float] | None]
-
-
-def _build_tsp(spec: str) -> Problem[list[int]]:
-    """Build the TSP problem for instance id ``spec``."""
-    return TSPProblem(load_tsp_instance(spec))
-
-
-def _build_knapsack(spec: str) -> Problem[list[int]]:
-    """Build the knapsack problem for instance id ``spec``."""
-    return KnapsackProblem(load_knapsack_instance(spec))
-
-
-def _build_continuous(spec: ContinuousSpec) -> Problem[list[float]]:
-    """Build the continuous problem for the ``(function, dimension)`` ``spec``."""
-    benchmark_function, dimension = spec
-    return ContinuousProblem(benchmark_function, dimension)
-
-
-def _continuous_bounds(spec: ContinuousSpec) -> tuple[float, float]:
-    """Return the box domain ``(lower, upper)`` of the spec's benchmark function."""
-    function, _ = spec
-    return (function.lower, function.upper)
-
-
-_TSP_INSTANCES = ("eil22", "eil51", "berlin52")
-_KNAPSACK_INSTANCES = (
-    "n20_uncorrelated",
-    "n20_weakly",
-    "n20_strongly",
-    "n30_uncorrelated",
-    "n30_weakly",
-    "n30_strongly",
-    "n50_uncorrelated",
-    "n50_weakly",
-    "n50_strongly",
-)
-_CONTINUOUS_SPECS: tuple[ContinuousSpec, ...] = tuple(
-    (function, dimension) for function in (SPHERE, RASTRIGIN, ROSENBROCK) for dimension in (5, 10)
-)
-
-
-FAMILIES: tuple[FamilyDescriptor, ...] = (
-    FamilyDescriptor("tsp", Representation.PERMUTATION, _TSP_INSTANCES, _build_tsp, lambda _: None),
-    FamilyDescriptor(
-        "knapsack", Representation.BINARY, _KNAPSACK_INSTANCES, _build_knapsack, lambda _: None
-    ),
-    FamilyDescriptor(
-        "continuous", Representation.REAL, _CONTINUOUS_SPECS, _build_continuous, _continuous_bounds
-    ),
-)
 
 
 def run_single_operator(
