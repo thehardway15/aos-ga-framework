@@ -11,6 +11,7 @@ comes from the injected ``Generator``, so a fixed seed reproduces the whole run.
 
 from __future__ import annotations
 
+import copy
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Generic
@@ -89,12 +90,17 @@ def run(
         new_population = []
         new_qualities = []
 
-        # Elitism: carry over the best individuals
+        # Elitism: carry over the best individuals. The genome is copied rather than
+        # aliased: an elite survives many generations, so a single operator that ever
+        # wrote through a parent would corrupt it retroactively, in every generation it
+        # already survived, and the run would fail no test. No operator does that today
+        # -- the copy makes the invariant structural instead of conventional, and costs
+        # one shallow copy per generation. The quality carries over unevaluated.
         elite_indices = sorted(range(len(qualities)), key=lambda i: qualities[i], reverse=True)[
             :elite_count
         ]
         for idx in elite_indices:
-            new_population.append(population[idx])
+            new_population.append(copy.copy(population[idx]))
             new_qualities.append(qualities[idx])
 
         while len(new_population) < population_size:

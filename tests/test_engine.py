@@ -3,8 +3,8 @@
 The engine is the shared, invariant part of the genetic algorithm -- generic over
 ``Problem``/``Genome``, with the variation model factored out to an interchangeable
 ``VariationStep``. It owns: population initialization and evaluation, tournament
-selection (k=3), elitism (one elite occupies one of the N slots, uncopied and
-NOT re-evaluated), succession, the generation budget, and evaluating each child
+selection (k=3), elitism (one elite occupies one of the N slots, carried as a copy
+and NOT re-evaluated), succession, the generation budget, and evaluating each child
 exactly once. Everything decides direction through the unified g (more-is-better),
 so a minimization problem (TSP) and a maximization one run through the same code.
 
@@ -22,7 +22,7 @@ Frozen contract (skeleton):
     1. init: call ``problem.initialize(rng)`` N times, then score each with
        ``problem.g`` (N evaluations); record the best g as history entry 0.
     2. each of G generations: carry the elite (argmax g, ties -> lowest index)
-       into the new population uncopied and WITHOUT re-evaluating it, then build
+       into the new population as a copy and WITHOUT re-evaluating it, then build
        N-1 children -- each ``variation.produce(select_parent, rng)`` ->
        ``problem.repair`` -> one ``problem.g`` -> ``variation.observe(g)`` --
        where ``select_parent`` runs a tournament over the current, fully scored
@@ -32,7 +32,9 @@ Frozen contract (skeleton):
 - determinism: all randomness comes from the injected ``rng`` (init, tournament,
   operators via ``produce``); a fixed seed reproduces the whole run.
 - elitism: the incumbent best never dies, so ``best_quality_history`` is
-  non-decreasing in g.
+  non-decreasing in g; and the carried elite is detached from the population it
+  came from, so a step that writes through a parent cannot alter it after the
+  fact -- its reported quality always matches its genome.
 - validation: ``N < 2``, ``G < 1``, ``tournament_k < 1`` or
   ``elite_count >= N`` raise ``ValueError``.
 """
@@ -107,6 +109,22 @@ class _ConstantChild(VariationStep[list[int]]):
     def produce(self, select_parent: Callable[[], Parent[list[int]]], rng: Generator) -> list[int]:
         select_parent()
         return list(self._child)
+
+
+class _ParentCorruptingStep(VariationStep[list[int]]):
+    """Step that writes through its parent -- the one thing operators must never do.
+
+    Deliberately violates the ``Operator``/``VariationStep`` contract in order to
+    test the engine's defence rather than the operators' good behaviour: it zeroes
+    the drawn parent's genome in place and returns an unrelated child. No real
+    operator does this, which is precisely why the engine's protection would
+    otherwise go unverified.
+    """
+
+    def produce(self, select_parent: Callable[[], Parent[list[int]]], rng: Generator) -> list[int]:
+        parent = select_parent()
+        parent.genome[:] = [0] * len(parent.genome)
+        return [1] * len(parent.genome)
 
 
 class _RecordingStep(VariationStep[list[int]]):
@@ -261,6 +279,27 @@ def test_elitism_preserves_the_incumbent_when_every_child_is_worse() -> None:
     assert result.best == best_genome
     assert result.best_quality == best_quality
     assert result.best_quality_history == [best_quality] * (generations + 1)
+
+
+def test_carried_elite_is_detached_from_the_population_it_came_from() -> None:
+    # The elite survives many generations, so aliasing it to a population slot makes
+    # its genome writable from outside long after it was scored. The failure mode is
+    # silent -- the recorded quality stays stale while the genome drifts -- so what is
+    # asserted is that the reported best is internally consistent even when the
+    # variation step writes through its parent. Sums are >= 5 for a real individual
+    # and 0 for a corrupted one, so the two are never confusable.
+    problem = _CountingSumProblem()  # MAXIMIZE, length 5, values in [1, 10)
+
+    result = run(
+        problem,
+        _ParentCorruptingStep(),
+        np.random.default_rng(11),
+        population_size=6,
+        generations=8,
+    )
+
+    assert problem.evaluate(result.best) == result.best_quality
+    assert 0 not in result.best
 
 
 # --- run: direction is honoured through g --------------------------------------
