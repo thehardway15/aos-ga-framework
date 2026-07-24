@@ -16,22 +16,21 @@ part of the distributable package.
 
 ```
 src/aos_ga/     framework (the only part packaged for distribution)
-  core/         problem and operator interfaces, g(x), representations
-  operators/    generic operators (permutation, binary, real) and pools
-  ga/           shared-pool GA engine (DEAP)
-  aos/          AOS strategies (Random, PM, AP, UCB, DMAB) + round-robin
-  credit/       credit assignment (IR, RFI, rank-based)
-  config/       run configuration and matrix generation
-  runner/       resumable, parallel execution
-  recording/    per-step, dynamics and result logs
-  metrics/      quality and AOS metrics
-  analysis/     statistical tests
-  viz/          plots
-experiments/    the study: concrete problems, baselines, dataset loaders, configs
+  core/         problem and operator interfaces, g(x), representations, GA engine
+  operators/    generic operators (permutation, binary, real)
+  variation/    variation steps: canonical pipeline, single, random, adaptive
+  aos/          AOS strategy interface and its implementations
+  credit/       credit assignment
+  rng.py        seeded generators; no global random state anywhere
+experiments/    the study: concrete problems, baselines, strategies, configs, datasets
 data/           versioned inputs (seeds, TSPLIB, knapsack dataset + manifest)
 results/        outputs (aggregated tables, figures; raw runs are git-ignored)
-replication/    end-to-end reproduction instructions
+replication/    end-to-end reproduction instructions and the pinned environment
 ```
+
+Several packages under `src/aos_ga/` are still empty placeholders for layers that
+have not landed yet (`config/`, `runner/`, `recording/`, `metrics/`, `analysis/`,
+`viz/`); their module docstrings describe the intended contents.
 
 ## Installation
 
@@ -43,9 +42,13 @@ source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -e ".[dev,analysis]"
 ```
 
-The core install (`pip install -e .`) pulls only the engine dependencies (NumPy,
-DEAP). The `analysis` extra adds the data, statistics and plotting libraries
-used by the recording, analysis and viz layers and by the study.
+The core install (`pip install -e .`) pulls only the engine dependency (NumPy).
+The `analysis` extra adds the data, statistics and plotting libraries used by the
+recording, analysis and viz layers and by the study.
+
+Those ranges are the compatibility contract, not the reproducibility one:
+reproducing the recorded results bit-for-bit requires the exact versions in
+[`replication/requirements-lock.txt`](replication/requirements-lock.txt).
 
 ## Development
 

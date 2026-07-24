@@ -6,8 +6,26 @@ End-to-end instructions for reproducing the experiments and the analysis.
 
 ## Environment
 
-- Python and pinned library versions: see `pyproject.toml`.
-- Install: `pip install -e ".[dev,analysis]"`.
+Two different things are pinned, for two different purposes:
+
+- **Compatibility** — `pyproject.toml` declares version *ranges*. They are what
+  the CI matrix exercises across Python 3.10–3.13, and what a reader who only
+  wants to run the code should install: `pip install -e ".[dev,analysis]"`.
+- **Reproducibility** — `requirements-lock.txt` records the *exact* versions
+  (CPython 3.13.0, NumPy 2.5.0, …) that produced every versioned artifact under
+  `results/`. Use it whenever the recorded numbers themselves matter:
+
+  ```bash
+  python3.13 -m venv .venv && source .venv/bin/activate
+  pip install -r replication/requirements-lock.txt
+  pip install -e . --no-deps
+  ```
+
+The distinction is not bookkeeping. NumPy guarantees a stable random stream only
+for the legacy `RandomState`; a `numpy.random.Generator` may draw differently
+after a feature release (NEP 19). Identical code and identical seeds therefore
+reproduce the recorded values exactly only against the pinned NumPy — across
+versions the *procedure* replicates, the individual numbers need not.
 
 ## Inputs
 
@@ -87,20 +105,21 @@ checksums. This is verified manually, not automated inside this repository.
 
 Every run is fully determined by its seed. Framework code draws only from a
 single injected `numpy.random.Generator`, created per run from one of the
-repetition seeds; NumPy's global random state is never seeded or used.
-
-DEAP's built-in operators are the one exception: they draw from Python's global
-`random` module and offer no way to inject a generator. Each run therefore seeds
-that module once, from a substream that is disjoint from the run's `Generator`,
-so the operators are reproducible without contaminating framework randomness.
-Because the `random` module is process-global, independent runs are isolated per
-process (not per thread), which the runner relies on when parallelizing.
+repetition seeds. There is **no exception**: Python's `random` module is never
+seeded or read, and NumPy's legacy global state is never touched. This is why the
+GA loop, the selection and the operators are written in-house rather than taken
+from an established EC library — those drive their operators from the
+process-global `random` module, which would have made the guarantee conditional
+and forced per-process isolation on the runner.
 
 Seeds are spawned from the master seed on `numpy.random.SeedSequence` branches:
 one branch feeds the knapsack instance seeds, a disjoint branch feeds the 30
-repetition seeds in `data/seeds/seeds.json`. Each run then splits its repetition
-seed into the two substreams above. The repetition seeds are shared by every
-configuration so the Friedman blocks are paired across configurations.
+repetition seeds in `data/seeds/seeds.json`. The repetition seeds are shared by
+every configuration and every level (CGA, FBO, Random, AOS), so the blocks are
+paired across configurations.
+
+The limit of the guarantee is the NumPy version, not the code: see
+[Environment](#environment).
 
 ## Running the experiments
 

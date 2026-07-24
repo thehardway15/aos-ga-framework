@@ -88,9 +88,11 @@ class ProbabilityMatching(AosStrategy):
         ``operator_ids`` order, so the operator is the first random decision of a
         reproduction event -- the same shape as the Random baseline, and the reason a
         seed replays the whole run. The walk is written out rather than delegated to
-        ``rng.choice`` so the mapping from draw to arm stays fixed in this code, not in
-        a library internal: recorded results must stay reproducible across NumPy
-        versions. The final arm closes the walk, covering the rounding case where the
+        ``rng.choice`` so the mapping from draw to arm is auditable here rather than in
+        a library internal, and so it costs exactly one draw. It buys clarity, not
+        cross-version stability: `Generator` streams are outside NumPy's compatibility
+        guarantee either way, which is why the replication environment pins the version
+        instead. The final arm closes the walk, covering the rounding case where the
         probabilities sum a hair below one. The estimates are left untouched.
         """
         probabilities = self._probabilities()

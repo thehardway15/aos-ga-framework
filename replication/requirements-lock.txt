@@ -1,0 +1,60 @@
+# Exact environment that produced the versioned artifacts under results/.
+#
+# Why this file exists separately from pyproject.toml: the ranges declared there
+# are the library's compatibility contract, exercised by the CI matrix across
+# Python 3.10-3.13. They are not a reproducibility contract. NumPy freezes the
+# random stream only for the legacy RandomState (NEP 19); a `Generator` may
+# produce different draws after a feature release, so identical code and
+# identical seeds reproduce the recorded numbers only against pinned versions.
+#
+# Interpreter: CPython 3.13.0
+#
+# Install with:
+#   python3.13 -m venv .venv && . .venv/bin/activate
+#   pip install -r replication/requirements-lock.txt
+#   pip install -e . --no-deps
+#
+# Note that numpy 2.5 requires Python >= 3.12, so this environment is narrower
+# than the package's declared `requires-python = ">=3.10"`. The matrix proves the
+# code runs on 3.10-3.13; this lock is what reproduces the results bit-for-bit.
+#
+# Dataset provenance is pinned separately: the nine knapsack instances come from
+# pisinger-knapsack v0.2.0, which this repository does not depend on at runtime.
+# See the "Knapsack dataset provenance" section of replication/README.md.
+
+# --- engine (runtime dependency of the aos-ga package) ---
+numpy==2.5.0
+
+# --- analysis extra: data, statistics and plotting ---
+pandas==2.3.3
+pyarrow==24.0.0
+scipy==1.18.0
+matplotlib==3.11.0
+seaborn==0.13.2
+
+# --- transitive dependencies of the analysis extra ---
+contourpy==1.3.3
+cycler==0.12.1
+fonttools==4.63.0
+kiwisolver==1.5.0
+packaging==26.2
+pillow==12.2.0
+pyparsing==3.3.2
+python-dateutil==2.9.0.post0
+pytz==2026.2
+six==1.17.0
+tzdata==2026.2
+
+# --- dev extra: the checks that gate every commit ---
+pytest==9.1.1
+pytest-cov==7.1.0
+ruff==0.15.20
+mypy==2.1.0
+
+# --- transitive dependencies of the dev extra ---
+coverage==7.14.3
+iniconfig==2.3.0
+mypy_extensions==1.1.0
+pathspec==1.1.1
+pluggy==1.6.0
+typing_extensions==4.15.0

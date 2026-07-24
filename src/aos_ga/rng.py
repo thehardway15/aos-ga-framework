@@ -8,16 +8,19 @@ overlap -- this is how the instance seeds and the repetition seeds are kept from
 colliding. The module holds no study-specific constants; callers pass their own
 seeds.
 
-Determinism boundary (DEAP). DEAP's built-in operators draw from Python's global
-``random`` module and expose no rng-injection parameter, so full reproducibility
-requires seeding that module once per run (see :func:`seed_global_random`). This
-is the single, deliberate use of global random state. Framework code otherwise
-draws only from the injected ``Generator`` and never seeds or reads NumPy's
-global state. Because the ``random`` module is process-global, independent runs
-must be isolated per process rather than per thread.
-"""
+There is no global random state anywhere in the framework: every draw comes from
+a ``Generator`` handed down from the run's seed, so a run is reproducible without
+process isolation and two runs can never contaminate each other. That is a
+property of the engine being written here rather than taken from a library --
+the established EC frameworks drive their operators from Python's process-global
+``random`` module, which would have forced a documented exception at exactly this
+point.
 
-import random
+Reproducibility is bit-exact for a fixed NumPy version, not across versions:
+``Generator`` streams are explicitly outside NumPy's stream-compatibility
+guarantee (NEP 19), which covers only the legacy ``RandomState``. The replication
+environment therefore pins NumPy exactly; see ``replication/README.md``.
+"""
 
 import numpy as np
 from numpy.random import Generator, SeedSequence
@@ -45,29 +48,3 @@ def spawn_seeds(seed_sequence: SeedSequence, count: int) -> list[int]:
     """
     children = seed_sequence.spawn(count)
     return [int(child.generate_state(1, dtype=np.uint32)[0]) for child in children]
-
-
-def seed_global_random(seed: int | SeedSequence) -> None:
-    """Seed Python's process-global ``random`` module -- the DEAP boundary.
-
-    DEAP's built-in operators draw from this module, so it is seeded once per run
-    to make them reproducible. Only the global ``random`` module is touched;
-    NumPy's global state is never seeded. Call once at the start of each run,
-    inside each worker process.
-    """
-    if isinstance(seed, int):
-        seed = np.random.SeedSequence(seed)
-    random.seed(int(seed.generate_state(1, dtype=np.uint32)[0]))
-
-
-def init_run_randomness(seed: int) -> Generator:
-    """Initialize all randomness for one run from its integer ``seed``.
-
-    Spawns two disjoint substreams from ``seed``: one seeds the global ``random``
-    module (DEAP operators), the other backs the returned ``Generator`` used by
-    framework code. Seeding the global ``random`` module is a documented side
-    effect.
-    """
-    numpy_ss, random_ss = np.random.SeedSequence(seed).spawn(2)
-    seed_global_random(random_ss)
-    return run_generator(numpy_ss)

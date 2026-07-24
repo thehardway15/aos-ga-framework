@@ -31,9 +31,14 @@ classifiers = [
     "Topic :: Scientific/Engineering",
     "Typing :: Typed",
 ]
+# The engine has exactly one runtime dependency. The range is the compatibility
+# contract of the library and is what the CI matrix exercises across Python
+# 3.10-3.13; it is deliberately NOT the reproducibility contract. `Generator`
+# streams may change between NumPy feature releases (NEP 19 freezes only the
+# legacy `RandomState`), so reproducing the recorded results bit-for-bit requires
+# the exact versions pinned in `replication/requirements-lock.txt`.
 dependencies = [
     "numpy>=2.0,<3",
-    "deap>=1.4.1,<2",
 ]
 
 [project.optional-dependencies]
@@ -123,5 +128,5 @@ strict = true
 files = ["src", "experiments", "tests"]
 
 [[tool.mypy.overrides]]
-module = ["deap.*", "seaborn"]
+module = ["seaborn"]
 ignore_missing_imports = true

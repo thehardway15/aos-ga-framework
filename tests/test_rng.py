@@ -1,44 +1,24 @@
 """Contract tests for the framework's deterministic random-number management.
 
 These pin the public API of :mod:`aos_ga.rng`: a per-run ``numpy.random.Generator``
-for framework-controlled stochasticity, a helper that derives reproducible seed
-streams, the single seam that seeds Python's global ``random`` module for DEAP's
-built-in operators, and the per-run initializer that wires the two together.
+for framework-controlled stochasticity, and a helper that derives reproducible seed
+streams from a ``SeedSequence``. Expected public names: ``run_generator``,
+``spawn_seeds``.
 
-The functions these tests import are not implemented yet: this file is the
-executable specification of the contract. Expected public names: ``run_generator``,
-``spawn_seeds``, ``seed_global_random``, ``init_run_randomness``.
+The absence of any global random state is part of the contract, not an incidental
+property, so it is asserted rather than assumed: neither function may seed or read
+Python's ``random`` module or NumPy's legacy global state. That is what lets
+independent runs share a process without contaminating each other.
 """
 
 from __future__ import annotations
 
 import pickle
 import random
-from collections.abc import Iterator
 
 import numpy as np
-import pytest
 
-from aos_ga.rng import (
-    init_run_randomness,
-    run_generator,
-    seed_global_random,
-    spawn_seeds,
-)
-
-
-@pytest.fixture(autouse=True)
-def _isolate_global_random() -> Iterator[None]:
-    """Save and restore the global ``random`` state so tests stay hermetic.
-
-    ``seed_global_random`` and ``init_run_randomness`` mutate process-global
-    state by design; this keeps that side effect from leaking between tests.
-    """
-    state = random.getstate()
-    try:
-        yield
-    finally:
-        random.setstate(state)
+from aos_ga.rng import run_generator, spawn_seeds
 
 
 def _sample(generator: np.random.Generator, size: int = 64) -> list[int]:
@@ -82,6 +62,14 @@ def test_run_generator_does_not_touch_global_random() -> None:
     assert random.getstate() == before
 
 
+def test_run_generator_does_not_touch_global_numpy_state() -> None:
+    # The other half of the same guarantee: NumPy's legacy global state is never
+    # seeded or advanced, so a run cannot be perturbed by anything outside it.
+    before = _numpy_global_state()
+    _sample(run_generator(7))
+    assert _numpy_global_state() == before
+
+
 # --- spawn_seeds ---------------------------------------------------------------
 
 
@@ -114,77 +102,7 @@ def test_spawn_seeds_from_sibling_branches_are_disjoint() -> None:
     assert set(spawn_seeds(branch_a, 16)).isdisjoint(spawn_seeds(branch_b, 16))
 
 
-# --- seed_global_random --------------------------------------------------------
-
-
-def test_seed_global_random_is_reproducible() -> None:
-    seed_global_random(5)
-    first = [random.random() for _ in range(20)]
-    seed_global_random(5)
-    second = [random.random() for _ in range(20)]
-    assert first == second
-
-
-def test_seed_global_random_differs_for_different_seeds() -> None:
-    seed_global_random(5)
-    first = [random.random() for _ in range(20)]
-    seed_global_random(6)
-    second = [random.random() for _ in range(20)]
-    assert first != second
-
-
-def test_seed_global_random_accepts_a_seed_sequence() -> None:
-    seed_global_random(np.random.SeedSequence(5))
-    first = [random.random() for _ in range(20)]
-    seed_global_random(np.random.SeedSequence(5))
-    second = [random.random() for _ in range(20)]
-    assert first == second
-
-
-def test_seed_global_random_does_not_touch_global_numpy_state() -> None:
-    # seed_global_random is the DEAP boundary: it seeds Python's global random
-    # module only. Framework code draws from injected Generators, never from
-    # NumPy's global state, so seeding must leave that state untouched.
-    before = _numpy_global_state()
-    seed_global_random(5)
-    assert _numpy_global_state() == before
-
-
-# --- init_run_randomness -------------------------------------------------------
-
-
-def test_init_run_randomness_returns_a_generator() -> None:
-    assert isinstance(init_run_randomness(42), np.random.Generator)
-
-
-def test_init_run_randomness_is_deterministic_end_to_end() -> None:
-    # The same run seed must reproduce both the numpy stream and the global
-    # ``random`` stream it seeds as a side effect.
-    generator = init_run_randomness(42)
-    numpy_draws = _sample(generator)
-    global_draws = [random.random() for _ in range(20)]
-
-    generator_again = init_run_randomness(42)
-    assert _sample(generator_again) == numpy_draws
-    assert [random.random() for _ in range(20)] == global_draws
-
-
-def test_init_run_randomness_differs_for_different_run_seeds() -> None:
-    numpy_draws = _sample(init_run_randomness(42))
-    global_draws = [random.random() for _ in range(20)]
-
-    other_numpy_draws = _sample(init_run_randomness(43))
-    other_global_draws = [random.random() for _ in range(20)]
-
-    assert numpy_draws != other_numpy_draws
-    assert global_draws != other_global_draws
-
-
-def test_init_run_randomness_uses_disjoint_substreams() -> None:
-    # The numpy generator and the global ``random`` seed are spawned from two
-    # disjoint substreams, so the generator's stream is not echoed by the global
-    # one for the same run seed.
-    generator = init_run_randomness(7)
-    numpy_draws = _sample(generator)
-    global_draws = [random.random() for _ in range(64)]
-    assert [float(value) for value in numpy_draws] != global_draws
+def test_spawn_seeds_does_not_touch_global_random() -> None:
+    before = random.getstate()
+    spawn_seeds(np.random.SeedSequence(1), 8)
+    assert random.getstate() == before
