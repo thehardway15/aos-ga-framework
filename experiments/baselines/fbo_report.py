@@ -226,7 +226,10 @@ def derive_oracle_rows(
 
 def evaluate_cell(
     family: FamilyDescriptor,
-    spec: tuple[Any, ...],
+    # One of ``family.specs``: an opaque per-family instance handle, erased to ``Any``
+    # for the same reason the descriptor erases it -- a bare id string for the discrete
+    # families, a ``(function, dimension)`` pair for the continuous one.
+    spec: Any,
     *,
     population_size: int,
     generations: int,

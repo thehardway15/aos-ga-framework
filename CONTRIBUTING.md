@@ -33,6 +33,13 @@ must be marked `@pytest.mark.heavy`. The cross-platform framework matrix runs
 `-m "not heavy"`, while the single study job installs the extras and runs the
 full suite. The experiment campaign itself is never run in CI.
 
+`experiments/tests/test_results_regression.py` re-runs one grid cell per
+committed result table and compares it against the stored aggregates. It fails
+whenever a change to an operator, the engine, the pools or the seeds would
+invalidate numbers already written down. A failure means the code and
+`results/aggregated/` have parted ways: either revert, or re-run the affected
+sweep and commit the new artifact together with the reason.
+
 ## Conventions
 
 - Formatting and linting: **Ruff** (configuration in `pyproject.toml`).
